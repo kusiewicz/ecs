@@ -1,13 +1,13 @@
-resource "aws_security_group" "ecs_sg" {
-  name        = "ecs_sg"
+resource "aws_security_group" "ecs" {
+  name        = "ecs"
   description = "Security group for ECS service"
   vpc_id      = var.vpc_id
 
   ingress {
-    from_port   = 8000
-    to_port     = 8000
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    from_port       = 8000
+    to_port         = 8000
+    protocol        = "tcp"
+    security_groups = [aws_security_group.alb.id]
   }
 
   egress {
@@ -19,8 +19,8 @@ resource "aws_security_group" "ecs_sg" {
 }
 
 
-resource "aws_security_group" "alb_sg" {
-  name        = "alb_sg"
+resource "aws_security_group" "alb" {
+  name        = "alb"
   description = "Security group for ALB"
   vpc_id      = var.vpc_id
 
@@ -28,27 +28,45 @@ resource "aws_security_group" "alb_sg" {
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
-    cidr_blocks = ["89.64.1.23/32"]
+    cidr_blocks = [var.my_ip]
   }
 
   egress {
-    from_port       = 0
-    to_port         = 0
-    protocol        = "-1"
-    security_groups = [aws_security_group.ecs_sg.id]
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 }
 
 resource "aws_ecr_repository" "app" {
   name = "app"
 
-  #   image_scanning_configuration {
-  #     scan_on_push = true
-  #   }
-
   encryption_configuration {
     encryption_type = "AES256"
   }
+
+  force_delete = true
+}
+
+data "aws_ecr_lifecycle_policy_document" "app" {
+  rule {
+    priority    = 1
+    description = "Expire images older than 3 days"
+
+    selection {
+      tag_status   = "untagged"
+      count_type   = "sinceImagePushed"
+      count_unit   = "days"
+      count_number = 3
+    }
+  }
+}
+
+resource "aws_ecr_lifecycle_policy" "app" {
+  repository = aws_ecr_repository.app.name
+
+  policy = data.aws_ecr_lifecycle_policy_document.app.json
 }
 
 data "aws_iam_policy_document" "ecs_secrets_manager_access" {
@@ -101,7 +119,7 @@ resource "aws_ecs_cluster" "cluster" {
 }
 
 resource "aws_secretsmanager_secret" "var2" {
-  name = "VAR2"
+  name = "VAR__2"
 }
 
 resource "aws_secretsmanager_secret_version" "var2" {
@@ -134,7 +152,7 @@ resource "aws_ecs_task_definition" "task" {
       ]
       secrets = [
         {
-          name      = "VAR2"
+          name      = "VAR__2"
           valueFrom = aws_secretsmanager_secret_version.var2.arn
         },
       ]
@@ -146,7 +164,7 @@ resource "aws_lb" "alb" {
   name               = "app-alb"
   internal           = false
   load_balancer_type = "application"
-  security_groups    = [aws_security_group.alb_sg.id]
+  security_groups    = [aws_security_group.alb.id]
   subnets            = var.subnet_ids
 }
 
@@ -177,8 +195,9 @@ resource "aws_ecs_service" "app_service" {
   launch_type     = "FARGATE"
 
   network_configuration {
-    subnets          = var.subnet_ids
-    security_groups  = [aws_security_group.ecs_sg.id]
+    subnets         = var.subnet_ids
+    security_groups = [aws_security_group.ecs.id]
+    # assign_public_ip = false
     assign_public_ip = true
   }
 

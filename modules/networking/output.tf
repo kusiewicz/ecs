@@ -1,9 +1,9 @@
 output "subnet_ids" {
-  description = "List of IDs of selected subnets"
-  value       = [for s in data.aws_subnet.selected : s.id]
+  description = "List of IDs of subnets"
+  value       = aws_subnet.ecs_subnet[*].id
 }
 
 output "vpc_id" {
-  description = "The ID of the selected VPC"
-  value       = data.aws_vpc.selected.id
+  description = "The ID of the VPC"
+  value       = aws_vpc.ecs_vpc.id
 }

@@ -12,3 +12,8 @@ variable "var1" {
   description = "Environment variable"
   type        = string
 }
+
+variable "my_ip" {
+  description = "My IP address"
+  type        = string
+}
