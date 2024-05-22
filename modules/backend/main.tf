@@ -127,6 +127,11 @@ resource "aws_secretsmanager_secret_version" "var2" {
   secret_string = "production2"
 }
 
+resource "aws_cloudwatch_log_group" "app_logs" {
+  name              = "app-task-logs"
+  retention_in_days = 14
+}
+
 resource "aws_ecs_task_definition" "task" {
   family                   = "app-task"
   execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
@@ -155,7 +160,15 @@ resource "aws_ecs_task_definition" "task" {
           name      = "VAR__2"
           valueFrom = aws_secretsmanager_secret_version.var2.arn
         },
-      ]
+      ],
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = aws_cloudwatch_log_group.app_logs.name
+          "awslogs-region"        = "eu-central-1"
+          "awslogs-stream-prefix" = "app"
+        }
+      }
     },
   ])
 }

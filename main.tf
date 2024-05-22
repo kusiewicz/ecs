@@ -20,7 +20,7 @@ module "backend" {
   subnet_ids = module.networking.subnet_ids
   vpc_id     = module.networking.vpc_id
   var1       = "production"
-  my_ip      = "37.14.149.163/32"
+  my_ip      = "78.8.133.132/32"
 }
 
 module "iam" {
