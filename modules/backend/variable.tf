@@ -1,5 +1,10 @@
-variable "subnet_ids" {
-  description = "List of IDs of selected subnets"
+variable "public_subnet_ids" {
+  description = "List of IDs of selected public subnets"
+  type        = list(string)
+}
+
+variable "private_subnet_ids" {
+  description = "List of IDs of selected private subnets"
   type        = list(string)
 }
 

@@ -12,15 +12,22 @@ provider "aws" {
 }
 
 module "networking" {
-  source = "./modules/networking"
+  source                     = "./modules/networking"
+  first_public_subnet_cidr   = "10.0.1.0/24"
+  second_public_subnet_cidr  = "10.0.2.0/24"
+  first_private_subnet_cidr  = "10.0.3.0/24"
+  second_private_subnet_cidr = "10.0.4.0/24"
+  first_availability_zone    = "eu-central-1a"
+  second_availability_zone   = "eu-central-1b"
 }
 
 module "backend" {
-  source     = "./modules/backend"
-  subnet_ids = module.networking.subnet_ids
-  vpc_id     = module.networking.vpc_id
-  var1       = "production"
-  my_ip      = "78.8.133.132/32"
+  source             = "./modules/backend"
+  public_subnet_ids  = module.networking.public_subnet_ids
+  private_subnet_ids = module.networking.private_subnet_ids
+  vpc_id             = module.networking.vpc_id
+  var1               = "production"
+  my_ip              = "78.8.133.132/32"
 }
 
 module "iam" {

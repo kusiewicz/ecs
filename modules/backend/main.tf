@@ -178,7 +178,7 @@ resource "aws_lb" "alb" {
   internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.alb.id]
-  subnets            = var.subnet_ids
+  subnets            = var.public_subnet_ids
 }
 
 resource "aws_lb_listener" "listener" {
@@ -208,10 +208,9 @@ resource "aws_ecs_service" "app_service" {
   launch_type     = "FARGATE"
 
   network_configuration {
-    subnets         = var.subnet_ids
-    security_groups = [aws_security_group.ecs.id]
-    # assign_public_ip = false
-    assign_public_ip = true
+    subnets          = var.private_subnet_ids
+    security_groups  = [aws_security_group.ecs.id]
+    assign_public_ip = false
   }
 
   load_balancer {
@@ -220,3 +219,5 @@ resource "aws_ecs_service" "app_service" {
     container_port   = 8000
   }
 }
+
+
