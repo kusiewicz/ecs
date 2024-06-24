@@ -11,5 +11,6 @@ ECS Standalone
 <img width="1117" alt="Pasted Graphic 6" src="https://github.com/kusiewicz/ecs/assets/78431445/27a50991-ecaf-4d7a-a54f-9d3aca468bcf">
 
 Circuit breaker
-<img width="1156" alt="3d707647bdaa48dc8e5084ad20faee25" src="https://github.com/kusiewicz/ecs/assets/78431445/b08d3de1-0790-4c38-ae6c-d86a3ae4c1d3">
+![image](https://github.com/kusiewicz/ecs/assets/78431445/4e3f1abc-beeb-4eec-8e00-be51c8e49d44)
+
 
