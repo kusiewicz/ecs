@@ -204,8 +204,18 @@ resource "aws_ecs_service" "app_service" {
   name            = "app-service"
   cluster         = aws_ecs_cluster.cluster.id
   task_definition = aws_ecs_task_definition.task.arn
-  desired_count   = 1
   launch_type     = "FARGATE"
+
+  // Scenariusz 1
+  # desired_count                      = 2
+  # deployment_minimum_healthy_percent = 100
+  # deployment_maximum_percent         = 200
+
+  // Scenariusz 2
+  desired_count                      = 1
+  deployment_maximum_percent         = 200
+  deployment_minimum_healthy_percent = 50
+
 
   network_configuration {
     subnets          = var.private_subnet_ids
@@ -218,6 +228,126 @@ resource "aws_ecs_service" "app_service" {
     container_name   = "app-container"
     container_port   = 8000
   }
+
+  deployment_circuit_breaker {
+    enable   = true
+    rollback = true
+  }
 }
 
 
+# resource "aws_scheduler_schedule" "task" {
+#   name = "task-schedule"
+
+#   flexible_time_window {
+#     mode = "OFF"
+#   }
+
+#   schedule_expression = "cron(0 9-17 * * ? *)"
+
+#   target {
+#     arn      = aws_ecs_cluster.cluster.arn
+#     role_arn = aws_iam_role.ecs_task_execution_role.arn
+#   }
+# }
+
+resource "aws_appautoscaling_target" "task" {
+  max_capacity       = 2
+  min_capacity       = 0
+  resource_id        = "service/app-cluster/app-service"
+  scalable_dimension = "ecs:service:DesiredCount"
+  service_namespace  = "ecs"
+}
+
+
+// Scenariusz 1
+resource "aws_appautoscaling_scheduled_action" "scale_service_schedule_down" {
+  name               = "app-service-scale-schedule-down"
+  service_namespace  = aws_appautoscaling_target.task.service_namespace
+  resource_id        = aws_appautoscaling_target.task.resource_id
+  scalable_dimension = aws_appautoscaling_target.task.scalable_dimension
+  schedule           = "cron(0 9 * * ? *)"
+  timezone           = "Europe/Warsaw"
+
+  scalable_target_action {
+    min_capacity = 1
+    max_capacity = 2
+  }
+}
+
+resource "aws_appautoscaling_scheduled_action" "scale_service_schedule_up" {
+  name               = "app-service-scale-schedule-up"
+  service_namespace  = aws_appautoscaling_target.task.service_namespace
+  resource_id        = aws_appautoscaling_target.task.resource_id
+  scalable_dimension = aws_appautoscaling_target.task.scalable_dimension
+  schedule           = "cron(0 17 * * ? *)"
+  timezone           = "Europe/Warsaw"
+
+  scalable_target_action {
+    min_capacity = 0
+    max_capacity = 0
+  }
+
+  depends_on = [aws_appautoscaling_scheduled_action.scale_service_schedule_down]
+}
+
+// Scenariusz 2
+resource "aws_appautoscaling_policy" "scale_service_threshold" {
+  name               = "app-service-scale-threshold"
+  policy_type        = "TargetTrackingScaling"
+  service_namespace  = aws_appautoscaling_target.task.service_namespace
+  resource_id        = aws_appautoscaling_target.task.resource_id
+  scalable_dimension = aws_appautoscaling_target.task.scalable_dimension
+
+  target_tracking_scaling_policy_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "ECSServiceAverageCPUUtilization"
+    }
+
+    target_value = 10
+  }
+}
+
+resource "aws_cloudwatch_log_group" "standalone_ecs" {
+  name              = "standalone-task-log"
+  retention_in_days = 14
+}
+
+resource "aws_ecs_task_definition" "standalone_ecs" {
+  family                   = "standalone-ecs"
+  network_mode             = "awsvpc"
+  requires_compatibilities = ["FARGATE"]
+  cpu                      = "256"
+  memory                   = "512"
+  execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
+
+  container_definitions = jsonencode([{
+    name      = "ecs-standalone"
+    image     = "amazonlinux"
+    command   = ["sh", "-c", "echo 'Hello world'"]
+    cpu       = 256
+    memory    = 512
+    essential = true
+    logConfiguration = {
+      logDriver = "awslogs"
+      options = {
+        "awslogs-group"         = aws_cloudwatch_log_group.standalone_ecs.name
+        "awslogs-region"        = "eu-central-1"
+        "awslogs-stream-prefix" = "ecs-standalone"
+      }
+    }
+  }])
+}
+
+data "aws_ecs_task_execution" "example" {
+  cluster         = aws_ecs_cluster.cluster.id
+  task_definition = aws_ecs_task_definition.standalone_ecs.arn
+  desired_count   = 1
+  launch_type     = "FARGATE"
+
+  network_configuration {
+    subnets          = var.private_subnet_ids
+    security_groups  = [aws_security_group.ecs.id]
+    assign_public_ip = false
+  }
+}
