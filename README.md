@@ -1,1 +1,15 @@
-init
+CPU Threshhold:
+![Pasted Graphic 3](https://github.com/kusiewicz/ecs/assets/78431445/5157919a-4ff6-4929-afea-4814a6d51f7c)![Pasted Graphic 3](https://github.com/kusiewicz/ecs/assets/78431445/29ea5109-a399-40f3-879c-10c35525c7bb)
+
+Wyłączony o godzinie
+<img width="1074" alt="Pasted Graphic 4" src="https://github.com/kusiewicz/ecs/assets/78431445/7b0e9a06-a4b6-413a-8aed-7614762950fe">
+
+Włączony o godzinie
+![Pasted Graphic 5](https://github.com/kusiewicz/ecs/assets/78431445/70496855-a6c6-424c-9c5f-08fd5bfff38b)
+
+ECS Standalone
+<img width="1117" alt="Pasted Graphic 6" src="https://github.com/kusiewicz/ecs/assets/78431445/27a50991-ecaf-4d7a-a54f-9d3aca468bcf">
+
+Circuit breaker
+<img width="1156" alt="3d707647bdaa48dc8e5084ad20faee25" src="https://github.com/kusiewicz/ecs/assets/78431445/b08d3de1-0790-4c38-ae6c-d86a3ae4c1d3">
+
