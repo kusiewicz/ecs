@@ -22,3 +22,8 @@ variable "my_ip" {
   description = "My IP address"
   type        = string
 }
+
+variable "db_password" {
+  description = "The password for the DB"
+  type        = string
+}

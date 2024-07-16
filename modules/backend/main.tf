@@ -77,6 +77,7 @@ data "aws_iam_policy_document" "ecs_secrets_manager_access" {
 
     resources = [
       aws_secretsmanager_secret.var2.arn,
+      aws_secretsmanager_secret.db_password.arn,
     ]
   }
 }
@@ -122,10 +123,20 @@ resource "aws_secretsmanager_secret" "var2" {
   name = "VAR__2"
 }
 
+resource "aws_secretsmanager_secret" "db_password" {
+  name = "DB_PASSWORD"
+}
+
 resource "aws_secretsmanager_secret_version" "var2" {
   secret_id     = aws_secretsmanager_secret.var2.id
   secret_string = "production2"
 }
+
+resource "aws_secretsmanager_secret_version" "db_password" {
+  secret_id     = aws_secretsmanager_secret.db_password.id
+  secret_string = var.db_password
+}
+
 
 resource "aws_cloudwatch_log_group" "app_logs" {
   name              = "app-task-logs"
@@ -160,6 +171,10 @@ resource "aws_ecs_task_definition" "task" {
           name      = "VAR__2"
           valueFrom = aws_secretsmanager_secret_version.var2.arn
         },
+        {
+          name      = "DB_PASSWORD"
+          valueFrom = aws_secretsmanager_secret.db_password.arn
+        }
       ],
       logConfiguration = {
         logDriver = "awslogs"
@@ -234,22 +249,6 @@ resource "aws_ecs_service" "app_service" {
     rollback = true
   }
 }
-
-
-# resource "aws_scheduler_schedule" "task" {
-#   name = "task-schedule"
-
-#   flexible_time_window {
-#     mode = "OFF"
-#   }
-
-#   schedule_expression = "cron(0 9-17 * * ? *)"
-
-#   target {
-#     arn      = aws_ecs_cluster.cluster.arn
-#     role_arn = aws_iam_role.ecs_task_execution_role.arn
-#   }
-# }
 
 resource "aws_appautoscaling_target" "task" {
   max_capacity       = 2
